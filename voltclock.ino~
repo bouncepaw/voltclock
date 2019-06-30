@@ -1,0 +1,75 @@
+// VOLTCLOCK by Timur Ismagilov version 1.0
+// Code below is MIT licensed, you already know its text. To read more about the
+// project please read the about file or visit my presentation at MAN. You won't
+// be able to visit it though.
+
+#include <Wire.h>
+#include <iarduino_RTC.h>
+#include "IRremote.h"
+
+#define button1Pin A3
+#define button2Pin A2
+#define hoursPin   11
+#define minutesPin 10
+#define secondsPin 9
+
+inline void blinkLed(void) {
+  digitalWrite(ledPin, HIGH);
+  delay(100);
+  digitalWrite(ledPin, LOW);
+}
+
+iarduino_RTC   time(RTC_DS1307);
+IRrecv         irrecv(irrecvPin);
+decode_results results;
+
+#include "dump.h"
+#include "adjust.h"
+#include "buttons.h"
+
+void setup(){
+  pinMode(hoursPin,   OUTPUT);
+  pinMode(minutesPin, OUTPUT);
+  pinMode(secondsPin, OUTPUT);
+  pinMode(button1Pin, INPUT_PULLUP);
+  pinMode(button2Pin, INPUT_PULLUP);
+
+  Serial.begin(9600);
+  time.begin();
+}
+
+void loop(){
+  if(!settingDial && (millis() % 1000 == 0)) {
+    Serial.println(time.gettime("H:i:s"));
+    voltwriteTime();
+  }
+
+  actOnPressOf(keyPress());
+}
+
+inline void voltwriteTime() {
+  voltwrite(time.hours, time.minutes, time.seconds);
+}
+
+inline void voltwriteDump() {
+  voltwrite(timeDump.hours, timeDump.minutes, timeDump.seconds);
+}
+
+inline void voltwrite(const byte h, const byte m, const byte s) {
+  analogWrite(hoursPin, calcHours(h));
+  analogWrite(minutesPin, calcMinutes(m));
+  analogWrite(secondsPin, calcSeconds(s));
+}
+  
+
+inline int calcHours(int hour) {
+  return 23*hour - 23;
+}
+
+inline int calcMinutes(int minute) {
+  return 4.5*minute - 4.5;
+}
+
+inline int calcSeconds(int second) {
+  return 4.5*second - 4.5;
+}

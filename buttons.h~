@@ -1,0 +1,74 @@
+// buttons.h: button processing for voltclock
+#pragma once
+
+#define debounceTimeout 100
+
+unsigned long long lastPress0 = millis();
+unsigned long long lastPress1 = millis();
+
+byte keyPress() {
+  bool button0isPressed = !digitalRead(button1Pin);
+  bool button1isPressed = !digitalRead(button2Pin);
+
+  bool shouldReturnRes = false;
+  byte res = 0b00;
+  if(millis() - lastPress0 > debounceTimeout) {
+    res |= 0b10;
+    lastPress0 = millis();
+    shouldReturnRes = true;
+  }
+
+  if(millis() - lastPress1 > debounceTimeout) {
+    res |= 0b01;
+    lastPress1 = millis();
+    shouldReturnRes = true;
+  }
+
+  if(shouldReturnRes) return res;
+  else return 0xFF; // the error value :)
+}
+
+/* Depending on current button press and the state, different action may be 
+ * returned.
+ * STATE  KEYSEQ ACTION
+ * select 00     adjust mode
+ * select 01     select seconds
+ * select 10     select minutes
+ * select 11     select hours
+ * adjust 00     select mode
+ * adjust 01     +1
+ * adjust 10     -1
+ * adjust 11     select mode
+ */
+void actOnPressOf(const byte keypress) {
+  if(keypress == 0xFF) return;
+  if(settingDial) { // the adjusting mode
+    switch(keypress) {
+    case 0b00:
+    case 0b11:
+      toggleSettingDial();
+      break;
+    case 0b01:
+      adjust(+1);
+      break;
+    case 0b10:
+      adjust(-1);
+      break;
+    }
+  } else {
+    switch(keypress) {
+    case 0b00:
+      toggleSettingDial();
+      break;
+    case 0b01:
+      setSeconds();
+      break;
+    case 0b10:
+      setMinutes();
+      break;
+    case 0b11:
+      setHours();
+      break;
+    }
+  }
+}
